@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Notify.Abstractions;
 
 namespace Notify.Core;
 
@@ -21,6 +22,7 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddOptions<NotifyOptions>();
+        AddCoreServices(services);
 
         return new NotifyBuilder(services, configuration: null);
     }
@@ -44,6 +46,7 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddOptions<NotifyOptions>().Configure(configure);
+        AddCoreServices(services);
 
         return new NotifyBuilder(services, configuration: null);
     }
@@ -67,7 +70,27 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddOptions<NotifyOptions>().Bind(section);
+        AddCoreServices(services);
 
         return new NotifyBuilder(services, section);
+    }
+
+    /// <summary>
+    /// Registers core notification services required for publishing and serialization.
+    /// </summary>
+    /// <param name="services">The service collection to configure.</param>
+    private static void AddCoreServices(IServiceCollection services)
+    {
+        services.AddSingleton<JsonNotificationSerializer>();
+        services.AddSingleton<MessagePackNotificationSerializer>();
+        services.AddSingleton<NoCompression>();
+        services.AddSingleton<Lz4Compression>();
+        services.AddSingleton<NotificationCodec>(serviceProvider =>
+            new NotificationCodec(
+                serviceProvider.GetRequiredService<JsonNotificationSerializer>(),
+                serviceProvider.GetRequiredService<MessagePackNotificationSerializer>(),
+                serviceProvider.GetRequiredService<NoCompression>(),
+                serviceProvider.GetRequiredService<Lz4Compression>()));
+        services.AddSingleton<INotify, Notifier>();
     }
 }
