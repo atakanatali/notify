@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <Authors>Notify Contributors</Authors>
+    <RepositoryUrl>https://example.com/notify</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>notifications;messaging;broker</PackageTags>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>
