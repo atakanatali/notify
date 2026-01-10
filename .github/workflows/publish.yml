@@ -1,0 +1,38 @@
+name: Publish NuGet
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Pack
+        run: |
+          dotnet pack src/Notify.Abstractions/Notify.Abstractions.csproj --configuration Release --no-build --output artifacts
+          dotnet pack src/Notify.Broker.Abstractions/Notify.Broker.Abstractions.csproj --configuration Release --no-build --output artifacts
+          dotnet pack src/Notify.Broker.RabbitMQ/Notify.Broker.RabbitMQ.csproj --configuration Release --no-build --output artifacts
+          dotnet pack src/Notify.Core/Notify.Core.csproj --configuration Release --no-build --output artifacts
+          dotnet pack src/Notify.Hosting/Notify.Hosting.csproj --configuration Release --no-build --output artifacts
+
+      - name: Publish
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
