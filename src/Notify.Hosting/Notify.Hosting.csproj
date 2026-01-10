@@ -9,4 +9,10 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Notify.Abstractions\Notify.Abstractions.csproj" />
+    <ProjectReference Include="..\Notify.Broker.Abstractions\Notify.Broker.Abstractions.csproj" />
+    <ProjectReference Include="..\Notify.Core\Notify.Core.csproj" />
+  </ItemGroup>
 </Project>
