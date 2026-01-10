@@ -5,4 +5,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Notify.Abstractions/Notify.Abstractions.csproj" />
+    <ProjectReference Include="../../src/Notify.Broker.Abstractions/Notify.Broker.Abstractions.csproj" />
+    <ProjectReference Include="../../src/Notify.Broker.RabbitMQ/Notify.Broker.RabbitMQ.csproj" />
+    <ProjectReference Include="../../src/Notify.Core/Notify.Core.csproj" />
+    <ProjectReference Include="../../src/Notify.Hosting/Notify.Hosting.csproj" />
+  </ItemGroup>
 </Project>
