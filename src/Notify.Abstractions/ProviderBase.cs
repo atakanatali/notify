@@ -27,7 +27,17 @@ public abstract class ProviderBase<TOptions> : IProvider, IDisposable
         }
 
         _options = optionsMonitor.CurrentValue;
-        _optionsChangeSubscription = optionsMonitor.OnChange(updated => _options = updated);
+        Logger.LogDebug(
+            "Provider {ProviderName} initialized with options type {OptionsType}.",
+            GetType().Name,
+            typeof(TOptions).Name);
+        _optionsChangeSubscription = optionsMonitor.OnChange(updated =>
+        {
+            _options = updated;
+            Logger.LogInformation(
+                "Provider {ProviderName} options were updated.",
+                GetType().Name);
+        });
     }
 
     /// <summary>
@@ -65,6 +75,11 @@ public abstract class ProviderBase<TOptions> : IProvider, IDisposable
         {
             throw new ArgumentNullException(nameof(packages));
         }
+
+        Logger.LogDebug(
+            "Sending {PackageCount} notifications via provider {ProviderName}.",
+            packages.Count,
+            GetType().Name);
 
         foreach (var package in packages)
         {
