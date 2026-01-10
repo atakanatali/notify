@@ -1,6 +1,9 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notify.Abstractions;
 using Notify.Broker.Abstractions;
+using System.Linq;
 
 namespace Notify.Core;
 
@@ -22,6 +25,8 @@ public sealed class Notifier : INotify
     private readonly string pushDestination;
     private readonly int batchSize;
     private readonly int maxInFlight;
+    private readonly ILogger<Notifier> logger;
+    private readonly IReadOnlyList<INotificationPipeline> pipelines;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Notifier"/> class.
@@ -33,6 +38,24 @@ public sealed class Notifier : INotify
         IBrokerPublisher brokerPublisher,
         NotificationCodec codec,
         IOptions<NotifyOptions> options)
+        : this(brokerPublisher, codec, options, NullLogger<Notifier>.Instance, pipelines: null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Notifier"/> class.
+    /// </summary>
+    /// <param name="brokerPublisher">The broker publisher used to send messages.</param>
+    /// <param name="codec">The codec used to encode notification packages.</param>
+    /// <param name="options">The configuration snapshot that controls publishing behavior.</param>
+    /// <param name="logger">The logger instance used for publish diagnostics.</param>
+    /// <param name="pipelines">The optional pipelines used to wrap publish operations.</param>
+    public Notifier(
+        IBrokerPublisher brokerPublisher,
+        NotificationCodec codec,
+        IOptions<NotifyOptions> options,
+        ILogger<Notifier> logger,
+        IEnumerable<INotificationPipeline>? pipelines)
     {
         this.brokerPublisher = brokerPublisher ?? throw new ArgumentNullException(nameof(brokerPublisher));
         this.codec = codec ?? throw new ArgumentNullException(nameof(codec));
@@ -42,6 +65,8 @@ public sealed class Notifier : INotify
         }
 
         this.options = options.Value;
+        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this.pipelines = pipelines is null ? Array.Empty<INotificationPipeline>() : pipelines.ToArray();
         queuePrefix = ResolveQueuePrefix(this.options);
         emailDestination = BrokerNaming.BuildQueueName(queuePrefix, EmailChannelName);
         smsDestination = BrokerNaming.BuildQueueName(queuePrefix, SmsChannelName);
@@ -64,9 +89,7 @@ public sealed class Notifier : INotify
         }
 
         ct.ThrowIfCancellationRequested();
-        string destination = ResolveDestination(package.Channel);
-        BrokerMessage message = EncodeMessage(package);
-        return brokerPublisher.PublishAsync(destination, message, ct);
+        return PublishPackageAsync(package, ct);
     }
 
     /// <summary>
@@ -128,7 +151,19 @@ public sealed class Notifier : INotify
     {
         string destination = ResolveDestination(package.Channel);
         BrokerMessage message = EncodeMessage(package);
-        return brokerPublisher.PublishAsync(destination, message, ct);
+        NotificationPipelineContext context = new(package, "Publish", destination: destination);
+        logger.LogDebug(
+            "Publishing notification {CorrelationId} to destination {Destination}.",
+            package.CorrelationId,
+            destination);
+        return ExecutePipelineAsync(
+            context,
+            async (_, token) =>
+            {
+                await brokerPublisher.PublishAsync(destination, message, token).ConfigureAwait(false);
+                NotifyMetrics.RecordPublished(package.Channel);
+            },
+            ct);
     }
 
     /// <summary>
@@ -176,5 +211,33 @@ public sealed class Notifier : INotify
         }
 
         return prefix;
+    }
+
+    /// <summary>
+    /// Executes the configured notification pipelines in order before running the terminal operation.
+    /// </summary>
+    /// <param name="context">The context describing the notification operation.</param>
+    /// <param name="terminal">The terminal operation to execute.</param>
+    /// <param name="ct">The cancellation token for the operation.</param>
+    /// <returns>A task that represents the asynchronous pipeline execution.</returns>
+    private Task ExecutePipelineAsync(
+        NotificationPipelineContext context,
+        NotificationPipelineDelegate terminal,
+        CancellationToken ct)
+    {
+        if (pipelines.Count == 0)
+        {
+            return terminal(context, ct);
+        }
+
+        NotificationPipelineDelegate next = terminal;
+        for (int index = pipelines.Count - 1; index >= 0; index--)
+        {
+            INotificationPipeline pipeline = pipelines[index];
+            NotificationPipelineDelegate current = next;
+            next = (pipelineContext, token) => pipeline.InvokeAsync(pipelineContext, current, token);
+        }
+
+        return next(context, ct);
     }
 }
