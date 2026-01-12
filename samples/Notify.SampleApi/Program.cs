@@ -1,7 +1,4 @@
-using Microsoft.Extensions.Options;
 using Notify.Abstractions;
-using Notify.Broker.Abstractions;
-using Notify.Broker.RabbitMQ;
 using Notify.Core;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -9,25 +6,6 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddNotify(builder.Configuration.GetSection("Notify"))
     .UseRabbitMq();
-
-builder.Services.AddOptions<RabbitMqOptions>()
-    .Bind(builder.Configuration.GetSection("RabbitMq"));
-
-builder.Services.AddSingleton<RabbitMqBrokerClient>(serviceProvider =>
-{
-    RabbitMqOptions brokerOptions = serviceProvider.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
-    NotifyOptions notifyOptions = serviceProvider.GetRequiredService<IOptions<NotifyOptions>>().Value;
-    IHostEnvironment environment = serviceProvider.GetRequiredService<IHostEnvironment>();
-    string queuePrefix = string.IsNullOrWhiteSpace(notifyOptions.QueuePrefix)
-        ? environment.ApplicationName
-        : notifyOptions.QueuePrefix;
-
-    return new RabbitMqBrokerClient(brokerOptions, queuePrefix);
-});
-
-builder.Services.AddSingleton<IBrokerPublisher>(serviceProvider => serviceProvider.GetRequiredService<RabbitMqBrokerClient>());
-builder.Services.AddSingleton<IBrokerConsumer>(serviceProvider => serviceProvider.GetRequiredService<RabbitMqBrokerClient>());
-builder.Services.AddSingleton<IBrokerClient>(serviceProvider => serviceProvider.GetRequiredService<RabbitMqBrokerClient>());
 
 WebApplication app = builder.Build();
 

@@ -8,8 +8,14 @@
     <PackageReference Include="K4os.Compression.LZ4" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Notify.Broker.Abstractions\Notify.Broker.Abstractions.csproj" />
+    <ProjectReference Include="..\Notify.Broker.RabbitMQ\Notify.Broker.RabbitMQ.csproj" />
   </ItemGroup>
 </Project>

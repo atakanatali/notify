@@ -34,10 +34,7 @@ dotnet add package Notify.Broker.RabbitMQ
 ### Producer (API) — publish notifications
 
 ```csharp
-using Microsoft.Extensions.Options;
 using Notify.Abstractions;
-using Notify.Broker.Abstractions;
-using Notify.Broker.RabbitMQ;
 using Notify.Core;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -45,23 +42,6 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddNotify(builder.Configuration.GetSection("Notify"))
     .UseRabbitMq();
-
-builder.Services.AddOptions<RabbitMqOptions>()
-    .Bind(builder.Configuration.GetSection("RabbitMq"));
-
-builder.Services.AddSingleton<RabbitMqBrokerClient>(serviceProvider =>
-{
-    RabbitMqOptions brokerOptions = serviceProvider.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
-    NotifyOptions notifyOptions = serviceProvider.GetRequiredService<IOptions<NotifyOptions>>().Value;
-    IHostEnvironment environment = serviceProvider.GetRequiredService<IHostEnvironment>();
-    string queuePrefix = string.IsNullOrWhiteSpace(notifyOptions.QueuePrefix)
-        ? environment.ApplicationName
-        : notifyOptions.QueuePrefix;
-
-    return new RabbitMqBrokerClient(brokerOptions, queuePrefix);
-});
-
-builder.Services.AddSingleton<IBrokerPublisher>(serviceProvider => serviceProvider.GetRequiredService<RabbitMqBrokerClient>());
 
 WebApplication app = builder.Build();
 
@@ -89,10 +69,7 @@ app.Run();
 ### Worker — consume notifications and deliver
 
 ```csharp
-using Microsoft.Extensions.Options;
 using Notify.Abstractions;
-using Notify.Broker.Abstractions;
-using Notify.Broker.RabbitMQ;
 using Notify.Core;
 using Notify.Hosting;
 
@@ -102,24 +79,6 @@ INotifyBuilder notifyBuilder = builder.Services
     .AddNotify(builder.Configuration.GetSection("Notify"))
     .UseRabbitMq()
     .AddNotifyDispatcher();
-
-builder.Services.AddOptions<RabbitMqOptions>()
-    .Bind(builder.Configuration.GetSection("RabbitMq"));
-
-builder.Services.AddSingleton<RabbitMqBrokerClient>(serviceProvider =>
-{
-    RabbitMqOptions brokerOptions = serviceProvider.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
-    NotifyOptions notifyOptions = serviceProvider.GetRequiredService<IOptions<NotifyOptions>>().Value;
-    IHostEnvironment environment = serviceProvider.GetRequiredService<IHostEnvironment>();
-    string queuePrefix = string.IsNullOrWhiteSpace(notifyOptions.QueuePrefix)
-        ? environment.ApplicationName
-        : notifyOptions.QueuePrefix;
-
-    return new RabbitMqBrokerClient(brokerOptions, queuePrefix);
-});
-
-builder.Services.AddSingleton<IBrokerPublisher>(serviceProvider => serviceProvider.GetRequiredService<RabbitMqBrokerClient>());
-builder.Services.AddSingleton<IBrokerConsumer>(serviceProvider => serviceProvider.GetRequiredService<RabbitMqBrokerClient>());
 
 notifyBuilder.AddEmailProvider<SampleEmailProvider, SampleProviderOptions>("Notify:Providers:Email");
 
@@ -188,16 +147,18 @@ public sealed class SampleEmailProvider : ProviderBase<SampleProviderOptions>
         "ProviderName": "Ses",
         "DefaultRecipient": "fallback@example.com"
       }
+    },
+    "Broker": {
+      "RabbitMq": {
+        "Host": "localhost",
+        "Port": 5672,
+        "Username": "guest",
+        "Password": "guest",
+        "VirtualHost": "/",
+        "ExchangeName": "notify",
+        "UseTls": false
+      }
     }
-  },
-  "RabbitMq": {
-    "Host": "localhost",
-    "Port": 5672,
-    "Username": "guest",
-    "Password": "guest",
-    "VirtualHost": "/",
-    "ExchangeName": "notify",
-    "UseTls": false
   }
 }
 ```
@@ -212,9 +173,11 @@ Notify names queues as:
 {queuePrefix}.push
 ```
 
-- The **prefix** is required for producers and is read from `Notify:QueuePrefix`.
-- The **worker** falls back to `IHostEnvironment.ApplicationName` if `QueuePrefix` is not set.
+- The **prefix** is read from `Notify:QueuePrefix` when provided.
+- If `QueuePrefix` is not set, Notify falls back to `IHostEnvironment.ApplicationName`.
 - Channel segments are **lowercased** (see `BrokerNaming.BuildQueueName`).
+
+RabbitMQ options are read from `Notify:Broker:RabbitMq` when present, with a fallback to a legacy root `RabbitMq` section.
 
 Use a stable prefix per environment (e.g., `myapp-prod`) to avoid cross-talk.
 

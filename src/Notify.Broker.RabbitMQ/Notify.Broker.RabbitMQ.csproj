@@ -6,4 +6,8 @@
   <ItemGroup>
     <PackageReference Include="RabbitMQ.Client" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Notify.Broker.Abstractions\Notify.Broker.Abstractions.csproj" />
+  </ItemGroup>
 </Project>
