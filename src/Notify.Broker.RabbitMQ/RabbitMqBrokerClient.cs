@@ -94,6 +94,16 @@ public sealed class RabbitMqBrokerClient : IBrokerClient, IAsyncDisposable
     }
 
     /// <summary>
+    /// Ensures the standard notification queues exist for email, SMS, and push channels.
+    /// </summary>
+    public void EnsureStandardQueues()
+    {
+        IConnection activeConnection = GetOrCreateConnection();
+        using IModel channel = activeConnection.CreateModel();
+        DeclareTopology(channel, standardQueues[0]);
+    }
+
+    /// <summary>
     /// Consumes messages from the specified RabbitMQ destination using the provided handler.
     /// </summary>
     /// <param name="destination">The queue or routing key to consume messages from.</param>
@@ -217,6 +227,10 @@ public sealed class RabbitMqBrokerClient : IBrokerClient, IAsyncDisposable
         return ValueTask.CompletedTask;
     }
 
+    /// <summary>
+    /// Gets an active RabbitMQ connection or creates a new connection if needed.
+    /// </summary>
+    /// <returns>The active <see cref="IConnection" /> instance.</returns>
     private IConnection GetOrCreateConnection()
     {
         lock (connectionLock)
@@ -230,6 +244,10 @@ public sealed class RabbitMqBrokerClient : IBrokerClient, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Builds a connection factory configured with the current broker options.
+    /// </summary>
+    /// <returns>A configured <see cref="ConnectionFactory" /> instance.</returns>
     private ConnectionFactory BuildConnectionFactory()
     {
         ConnectionFactory factory = new()
@@ -254,6 +272,11 @@ public sealed class RabbitMqBrokerClient : IBrokerClient, IAsyncDisposable
         return factory;
     }
 
+    /// <summary>
+    /// Declares the exchange, standard queues, and destination queue for publishing or consuming.
+    /// </summary>
+    /// <param name="channel">The channel used to declare topology.</param>
+    /// <param name="destination">The destination queue to ensure exists.</param>
     private void DeclareTopology(IModel channel, string destination)
     {
         string? exchangeName = options.ExchangeName;
@@ -278,6 +301,11 @@ public sealed class RabbitMqBrokerClient : IBrokerClient, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Determines whether an exception should be treated as a transient broker failure.
+    /// </summary>
+    /// <param name="exception">The exception to evaluate.</param>
+    /// <returns><see langword="true" /> when the exception is considered transient; otherwise <see langword="false" />.</returns>
     private static bool IsTransientFailure(Exception exception)
     {
         return exception is TimeoutException
@@ -286,5 +314,8 @@ public sealed class RabbitMqBrokerClient : IBrokerClient, IAsyncDisposable
             || exception is AlreadyClosedException;
     }
 
+    /// <summary>
+    /// Stores the channel and consumer tag for an active subscription.
+    /// </summary>
     private readonly record struct ConsumerRegistration(IModel Channel, string Tag);
 }

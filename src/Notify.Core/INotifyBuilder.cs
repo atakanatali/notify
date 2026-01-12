@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notify.Abstractions;
+using Notify.Broker.RabbitMQ;
 
 namespace Notify.Core;
 
