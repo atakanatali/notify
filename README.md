@@ -1,6 +1,6 @@
 # Notify
 
-<img width="256" height="256" alt="Image" src="https://github.com/user-attachments/assets/1cbcd9c1-7529-454c-98b5-44f6fc47079a" />
+<img width="512" height="512" alt="Image" src="https://github.com/user-attachments/assets/b4fab3ac-98e7-4b08-86c9-6b4e9f514834" />
 
 Notify is a .NET library for **asynchronous, broker-backed notification delivery**. It decouples producers (APIs, jobs, services) from workers that perform the actual delivery (email, SMS, push), giving you:
 
