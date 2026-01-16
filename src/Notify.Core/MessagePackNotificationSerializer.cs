@@ -1,3 +1,4 @@
+using System.Buffers;
 using MessagePack;
 using MessagePack.Resolvers;
 using Notify.Abstractions;
@@ -30,7 +31,9 @@ public sealed class MessagePackNotificationSerializer : INotificationSerializer
     /// <returns>The deserialized notification package.</returns>
     public NotificationPackage Deserialize(ReadOnlySpan<byte> payload)
     {
-        return MessagePackSerializer.Deserialize<NotificationPackage>(payload, Options)
+        var memory = new ReadOnlyMemory<byte>(payload.ToArray());
+        var sequence = new ReadOnlySequence<byte>(memory);
+        return MessagePackSerializer.Deserialize<NotificationPackage>(sequence, Options)
             ?? throw new MessagePackSerializationException("Failed to deserialize notification package.");
     }
 }
