@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Hosting;
 using Notify.Core;
 using Notify.Hosting;
 using Notify.SampleWorker;

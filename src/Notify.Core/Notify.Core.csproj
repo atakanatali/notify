@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Notify.Abstractions\Notify.Abstractions.csproj" />
     <ProjectReference Include="..\Notify.Broker.Abstractions\Notify.Broker.Abstractions.csproj" />
     <ProjectReference Include="..\Notify.Broker.RabbitMQ\Notify.Broker.RabbitMQ.csproj" />
   </ItemGroup>

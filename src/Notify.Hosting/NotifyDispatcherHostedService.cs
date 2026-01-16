@@ -420,13 +420,13 @@ public sealed class NotifyDispatcherHostedService : BackgroundService
                     return;
                 }
 
-                NotificationPipelineContext context = new(
+                NotificationPipelineContext batchContext = new(
                     packages[0],
                     "SendBatch",
                     packageCount: packages.Count,
                     provider: provider.GetType().Name);
                 await SendWithDiagnosticsAsync(
-                    context,
+                    batchContext,
                     provider,
                     token => provider.SendBatchAsync(packages, token),
                     ct).ConfigureAwait(false);
