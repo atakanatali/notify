@@ -1,45 +1,114 @@
-name: Publish NuGet
+name: Publish to NuGet
 
 on:
   workflow_dispatch:
     inputs:
-      version_suffix:
-        description: 'Optional version suffix (e.g. preview.1)'
+      version:
+        description: 'Package version (e.g., 1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Is this a prerelease? (adds -preview suffix)'
         required: false
-        default: ''
+        type: boolean
+        default: false
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
   publish:
+    name: Build & Publish
+    if: github.repository_owner == 'atakanatali'
     runs-on: ubuntu-latest
+    environment: nuget-prod
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup .NET
+      - name: 🔧 Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
 
+      - name: Set Version
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [ "${{ github.event.inputs.prerelease }}" == "true" ]; then
+            VERSION="${VERSION}-preview"
+          fi
+          echo "PACKAGE_VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Package version: ${VERSION}"
+
       - name: Restore
         run: dotnet restore
 
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
+      - name: 🔨 Build
+        run: |
+          dotnet build -c Release --no-restore \
+            /p:Version=${{ steps.version.outputs.PACKAGE_VERSION }} \
+            /p:PackageVersion=${{ steps.version.outputs.PACKAGE_VERSION }}
+
+      - name: Test
+        run: dotnet test -c Release --no-build --verbosity normal
 
       - name: Pack
         run: |
-          VERSION_SUFFIX_ARG=""
-          if [ -n "${{ github.event.inputs.version_suffix }}" ]; then
-            VERSION_SUFFIX_ARG="--version-suffix ${{ github.event.inputs.version_suffix }}"
-          fi
-          dotnet pack src/Notify.Abstractions/Notify.Abstractions.csproj --configuration Release --no-build --output artifacts $VERSION_SUFFIX_ARG
-          dotnet pack src/Notify.Broker.Abstractions/Notify.Broker.Abstractions.csproj --configuration Release --no-build --output artifacts $VERSION_SUFFIX_ARG
-          dotnet pack src/Notify.Broker.RabbitMQ/Notify.Broker.RabbitMQ.csproj --configuration Release --no-build --output artifacts $VERSION_SUFFIX_ARG
-          dotnet pack src/Notify.Core/Notify.Core.csproj --configuration Release --no-build --output artifacts $VERSION_SUFFIX_ARG
-          dotnet pack src/Notify.Hosting/Notify.Hosting.csproj --configuration Release --no-build --output artifacts $VERSION_SUFFIX_ARG
+          dotnet pack -c Release --no-build \
+            /p:Version=${{ steps.version.outputs.PACKAGE_VERSION }} \
+            /p:PackageVersion=${{ steps.version.outputs.PACKAGE_VERSION }} \
+            -o ./nupkgs
 
-      - name: Publish
+      - name: 📋 List Packages
+        run: ls -la ./nupkgs
+
+      - name: Push to NuGet
+        run: |
+          for package in ./nupkgs/*.nupkg; do
+            echo "Publishing: $package"
+            dotnet nuget push "$package" \
+              --api-key "${{ secrets.NUGET_API_KEY }}" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      - name: Create Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.version.outputs.PACKAGE_VERSION }}" -m "Release v${{ steps.version.outputs.PACKAGE_VERSION }}"
+          git push origin "v${{ steps.version.outputs.PACKAGE_VERSION }}"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.PACKAGE_VERSION }}
+          name: Notify v${{ steps.version.outputs.PACKAGE_VERSION }}
+          body: |
+            ## Notify v${{ steps.version.outputs.PACKAGE_VERSION }}
+            
+            ### Packages Published
+            - `Notify.Abstractions` - Shared contracts and interfaces
+            - `Notify.Core` - Producer-side publishing, serialization, and compression
+            - `Notify.Hosting` - Worker-side consumption and provider dispatching
+            - `Notify.Broker.Abstractions` - Broker-agnostic abstractions
+            - `Notify.Broker.RabbitMQ` - RabbitMQ broker implementation
+            
+            ### Installation
+            ```bash
+            dotnet add package Notify.Core --version ${{ steps.version.outputs.PACKAGE_VERSION }}
+            ```
+            
+            See [CHANGELOG.md](https://github.com/atakanatali/notify/blob/main/CHANGELOG.md) for details.
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: |
+            ./nupkgs/*.nupkg
+            ./nupkgs/*.snupkg
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-        run: dotnet nuget push "artifacts/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
