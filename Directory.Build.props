@@ -1,10 +1,15 @@
 <Project>
   <PropertyGroup>
-    <Authors>Notify Contributors</Authors>
-    <RepositoryUrl>https://example.com/notify</RepositoryUrl>
+    <Authors>Atakan Atali</Authors>
+    <RepositoryUrl>https://github.com/atakanatali/notify</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageTags>notifications;messaging;broker</PackageTags>
+    <PackageTags>notifications;messaging;broker;rabbitmq;dotnet</PackageTags>
+    <PackageIcon>icon.png</PackageIcon>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
 </Project>

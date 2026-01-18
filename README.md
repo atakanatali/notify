@@ -1,6 +1,16 @@
 # Notify
 
-<img width="512" height="512" alt="Image" src="https://github.com/user-attachments/assets/b4fab3ac-98e7-4b08-86c9-6b4e9f514834" />
+<p align="center">
+  <img width="200" height="200" alt="Notify Logo" src="https://github.com/user-attachments/assets/b4fab3ac-98e7-4b08-86c9-6b4e9f514834" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/atakanatali/notify/actions/workflows/ci.yml"><img src="https://github.com/atakanatali/notify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/atakanatali/notify/actions/workflows/publish.yml"><img src="https://github.com/atakanatali/notify/actions/workflows/publish.yml/badge.svg" alt="Publish" /></a>
+  <a href="https://www.nuget.org/packages/Notify.Core"><img src="https://img.shields.io/nuget/v/Notify.Core.svg" alt="NuGet" /></a>
+  <a href="https://www.nuget.org/packages/Notify.Core"><img src="https://img.shields.io/nuget/dt/Notify.Core.svg" alt="NuGet Downloads" /></a>
+  <a href="https://github.com/atakanatali/notify/blob/main/LICENSE"><img src="https://img.shields.io/github/license/atakanatali/notify.svg" alt="License" /></a>
+</p>
 
 Notify is a .NET library for **asynchronous, broker-backed notification delivery**. It decouples producers (APIs, jobs, services) from workers that perform the actual delivery (email, SMS, push), giving you:
 
@@ -10,6 +20,41 @@ Notify is a .NET library for **asynchronous, broker-backed notification delivery
 - **Observability hooks** via metrics and pipelines.
 
 If you need to enqueue notifications quickly and dispatch them reliably with tuned throughput, Notify exists to fill that gap.
+
+## Core Architecture
+
+```mermaid
+flowchart LR
+    subgraph Producer["Producer (API/Service)"]
+        A[INotify] --> B[Notifier]
+        B --> C[NotificationCodec]
+    end
+    
+    subgraph Broker["Message Broker"]
+        D[(RabbitMQ)]
+    end
+    
+    subgraph Worker["Worker (Background Service)"]
+        E[NotifyDispatcherHostedService]
+        E --> F[ProviderRegistry]
+        F --> G[Email Provider]
+        F --> H[SMS Provider]
+        F --> I[Push Provider]
+    end
+    
+    C --> D
+    D --> E
+    
+    style Producer fill:#e1f5fe
+    style Broker fill:#fff3e0
+    style Worker fill:#e8f5e9
+```
+
+**Key Components:**
+- **Notify.Abstractions** - Shared contracts (`INotify`, `IProvider`, `NotificationPackage`)
+- **Notify.Core** - Producer-side publishing, serialization, and compression
+- **Notify.Hosting** - Worker-side consumption and provider dispatching
+- **Notify.Broker.RabbitMQ** - RabbitMQ broker implementation
 
 ## Install (NuGet)
 

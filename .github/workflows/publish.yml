@@ -1,9 +1,12 @@
 name: Publish NuGet
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      version_suffix:
+        description: 'Optional version suffix (e.g. preview.1)'
+        required: false
+        default: ''
 
 jobs:
   publish:
@@ -26,11 +29,15 @@ jobs:
 
       - name: Pack
         run: |
-          dotnet pack src/Notify.Abstractions/Notify.Abstractions.csproj --configuration Release --no-build --output artifacts
-          dotnet pack src/Notify.Broker.Abstractions/Notify.Broker.Abstractions.csproj --configuration Release --no-build --output artifacts
-          dotnet pack src/Notify.Broker.RabbitMQ/Notify.Broker.RabbitMQ.csproj --configuration Release --no-build --output artifacts
-          dotnet pack src/Notify.Core/Notify.Core.csproj --configuration Release --no-build --output artifacts
-          dotnet pack src/Notify.Hosting/Notify.Hosting.csproj --configuration Release --no-build --output artifacts
+          VERSION_SUFFIX_ARG=""
+          if [ -n "${{ github.event.inputs.version_suffix }}" ]; then
+            VERSION_SUFFIX_ARG="--version-suffix ${{ github.event.inputs.version_suffix }}"
+          fi
+          dotnet pack src/Notify.Abstractions/Notify.Abstractions.csproj --configuration Release --no-build --output artifacts $VERSION_SUFFIX_ARG
+          dotnet pack src/Notify.Broker.Abstractions/Notify.Broker.Abstractions.csproj --configuration Release --no-build --output artifacts $VERSION_SUFFIX_ARG
+          dotnet pack src/Notify.Broker.RabbitMQ/Notify.Broker.RabbitMQ.csproj --configuration Release --no-build --output artifacts $VERSION_SUFFIX_ARG
+          dotnet pack src/Notify.Core/Notify.Core.csproj --configuration Release --no-build --output artifacts $VERSION_SUFFIX_ARG
+          dotnet pack src/Notify.Hosting/Notify.Hosting.csproj --configuration Release --no-build --output artifacts $VERSION_SUFFIX_ARG
 
       - name: Publish
         env:
