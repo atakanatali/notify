@@ -193,7 +193,7 @@ public sealed class Notifier : INotify
             NotificationChannel.Email => emailDestination,
             NotificationChannel.Sms => smsDestination,
             NotificationChannel.Push => pushDestination,
-            _ => throw new InvalidOperationException("Unsupported notification channel.")
+            _ => throw new InvalidOperationException($"Unsupported notification channel: {channel}")
         };
     }
 
