@@ -1,7 +1,7 @@
 # Notify
 
 <p align="center">
-  <img width="200" height="200" alt="Notify Logo" src="https://github.com/user-attachments/assets/b4fab3ac-98e7-4b08-86c9-6b4e9f514834" />
+  <img width="456" height="456" alt="Notify Logo" src="https://github.com/user-attachments/assets/9c078182-beb5-47d7-b076-05c42872f592" />
 </p>
 
 <p align="center">
