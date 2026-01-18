@@ -17,6 +17,9 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
+permissions:
+  contents: write
+
 jobs:
   publish:
     name: Build & Publish
