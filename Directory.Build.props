@@ -5,11 +5,13 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>notifications;messaging;broker;rabbitmq;dotnet</PackageTags>
     <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>NUGET_README.md</PackageReadmeFile>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)NUGET_README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>
