@@ -8,7 +8,7 @@
   <a href="https://github.com/atakanatali/notify/actions/workflows/ci.yml"><img src="https://github.com/atakanatali/notify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/atakanatali/notify/actions/workflows/publish.yml"><img src="https://github.com/atakanatali/notify/actions/workflows/publish.yml/badge.svg" alt="Publish" /></a>
   <a href="https://www.nuget.org/packages/Notify.Core"><img src="https://img.shields.io/nuget/v/Notify.Core.svg" alt="NuGet" /></a>
-  <a href="https://www.nuget.org/packages/Notify.Core"><img src="https://img.shields.io/nuget/dt/Notify.Core.svg" alt="NuGet Downloads" /></a>
+  <a href="https://www.nuget.org/packages/Notify.Abstractions"><img src="https://img.shields.io/nuget/dt/Notify.Abstractions.svg" alt="NuGet Downloads" /></a>
   <a href="https://github.com/atakanatali/notify/blob/main/LICENSE"><img src="https://img.shields.io/github/license/atakanatali/notify.svg" alt="License" /></a>
 </p>
 
